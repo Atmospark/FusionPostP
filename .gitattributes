@@ -1,2 +1,2 @@
-*.cps linguist-detectable
+*.cps linguist-detectable=true
 *.cps linguist-language=javascript
