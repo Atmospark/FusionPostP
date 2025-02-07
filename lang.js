@@ -1,11 +1,12 @@
 // repo is javascript
 function rpm2dial(rpm)
 	{
-	// translates an RPM for the spindle into a dial value, eg. for the Makita RT0700 and Dewalt 611 routers
+	/* translates an RPM for the spindle into a dial value, eg. for the Makita RT0700 and Dewalt 611 routers
 	// additionally, check that spindle rpm is between minimum and maximum of what our spindle can do
 	// remove // from alert if neccessary
 	// array which maps spindle speeds to router dial settings,
-	// according to Makita RT0700 Manual : 1=10000, 2=12000, 3=17000, 4=22000, 5=27000, 6=30000
+	   according to Makita RT0700 Manual : 1=10000, 2=12000, 3=17000, 4=22000, 5=27000, 6=30000
+    */
 	var speeds = [0, 10000, 12000, 17000, 22000, 27000, 30000];
 
 	if (rpm < speeds[1])
