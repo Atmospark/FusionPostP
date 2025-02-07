@@ -1,5 +1,4 @@
-*.kicad_pcb linguist-detectable
-*.sch linguist-detectable
+*.cps linguist-detectable
 tools/export_bom.py -linguist-detectable
 
 *.cps linguist-language=js
