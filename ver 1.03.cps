@@ -1,4 +1,3 @@
-vim: syntax=javascript
 /*
 CNC3D / Nighthawk
 
