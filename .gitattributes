@@ -1,2 +1,5 @@
-**.*.cps linguist-detectable
+
 **.*.cps linguist-language=javascript
+
+**.*.cps linguist-detectable
+**.*.cps linguist-vendored
