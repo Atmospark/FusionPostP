@@ -10,6 +10,7 @@
                         Reformatted tool information for easier access for Commander
 25-09-2024      -   Added unit values into tool information for T# comment lines to avoid confusion
 06-02-2025	-   Reformatted tool information for easier integration for Commander
+11-02-2025	-   Reformatted tool information and added info breakout at start of GCODE for easier integration into latest Commander build
     
 				
 
