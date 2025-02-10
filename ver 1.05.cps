@@ -179,6 +179,7 @@ properties =
 // creation of all kinds of G-code formats - controls the amount of decimals used in the generated G-Code
 var gFormat = createFormat({prefix:"G", decimals:0});
 var mFormat = createFormat({prefix:"M", decimals:0});
+var tFormat = createFormat({prefix:"T", decimals:0});
 
 var xyzFormat = createFormat({decimals:(unit == MM ? 4 : 6)});
 var abcFormat = createFormat({decimals: 3, forceDecimal: true, scale: DEG});
@@ -262,24 +263,14 @@ function writeBlock()
 	writeWords(arguments);
 	}
 
-/*function writeComment(text)
-	{
-	// Remove special characters which could confuse GRBL : $, !, ~, ?, (, )
-	// In order to make it simple, I replace everything which is not A-Z, 0-9, space, : , .
-	// Finally put everything between () as this is the way GRBL & UGCS expect comments
-	writeln("(" + String(text).replace(/[^a-zA-Z\d :=,.]+/g, " ") + ")");
-	}*/
-
-
 function formatComment(text)
    {
    return ("(" + filterText(String(text), permittedCommentChars) + ")");
    }
 
-
 function writeComment(text)
    {
-   // v20 - split the line so no comment is longer than 70 chars
+   // v1.04 - split the line so no comment is longer than 140 chars
    if (text.length > 140)
       {
       //text = String(text).replace( /[^a-zA-Z\d:=,.]+/g, " "); // remove illegal chars
@@ -305,7 +296,6 @@ function writeComment(text)
 function onOpen()
 	{
 
-    var multipleToolError;
 
 	// here you set all the properties of your machine, so they can be used later on
 	var myMachine = getMachineConfiguration();
@@ -330,6 +320,27 @@ function onOpen()
 	writeComment("G-Code optimized for " + myMachine.getModel() + " controller using " + myMachine.getControl() );
 	writeComment("Post Processor version " + obversion);
 
+	writeln("");
+
+	if(unit == MM)
+		{   
+			var toolUnit = "mm";
+		}
+	if(unit == IN)
+		{
+			var toolUnit = "in";
+		}
+
+		var numberOfSections = getNumberOfSections();
+	
+	for (var i = 0; i < numberOfSections; ++i)
+		{		         
+                var sectioni = getSection(i);
+                var tooli = sectioni.getTool();
+				
+				writeComment((tFormat.format(tooli.number)) + ": " + toTitleCase(getToolTypeName(tooli.type)) + " " + tooli.numberOfFlutes + " Flute" + ((tooli.numberOfFlutes == 1)?"":"s") + ", Diam = " + tooli.diameter + toolUnit + ", Len = " + tooli.fluteLength + toolUnit + " ");
+		
+		}
 	writeln("");
 
 	if (programName)
@@ -370,19 +381,8 @@ function onOpen()
                          return;
                          }
                       }
-                   else
-                      {
-                        multipleToolError = true;                        
-                      }
+					
                    }
-
-         if (multipleToolError)
-            {
-                var mte = "MULTIPLE TOOLS DETECTED. Tool changes not supported.";
-                warning(mte);
-                writeComment(mte);
-                error("Fatal Error : Multiple tools detected. This Post Processor does not support tool changes. You should create individual jobs for separate tools");
-            }
 
     
         var section = getSection(i);
@@ -405,18 +405,11 @@ function onOpen()
 		   writeComment("Work Coordinate System : G" + (section.workOffset + 53));
          }
 
-            if(unit == MM)
-                {   
-                    var toolUnit = "mm";
-                }
-            if(unit == IN)
-                {
-                    var toolUnit = "in";
-                }
+ 
 
 	    //add tool info as a comment with tool number linked to section number. Multiple tools in same job will force error in post so this works for Commander as intended GCODE sender to read tool info and display to user
 		
-        writeComment("T" + (i+1) + ": " + toTitleCase(getToolTypeName(tool.type)) + " " + tool.numberOfFlutes + " Flute" + ((tool.numberOfFlutes == 1)?"":"s") + ", Diam = " + tool.diameter + toolUnit + ", Len = " + tool.fluteLength + toolUnit + " ");
+        writeComment((tFormat.format(tooli.number)) + ": " + toTitleCase(getToolTypeName(tool.type)) + " " + tool.numberOfFlutes + " Flute" + ((tool.numberOfFlutes == 1)?"":"s") + ", Diam = " + tool.diameter + toolUnit + ", Len = " + tool.fluteLength + toolUnit + " ");
 		
         if (getProperty("routerType") == "router")
 			{
@@ -463,6 +456,7 @@ function onOpen()
 	writeln("");
 	
     }   
+
     
 function onComment(message)
 	{
@@ -487,7 +481,7 @@ function onSection()
 	var nmbrOfSections = getNumberOfSections();		// how many operations are there in total
 	var sectionId = getCurrentSectionId();			// what is the number of this operation (starts from 0)
 	var section = getSection(sectionId);			// what is the section-object for this operation
-
+	
 	
 	// check RadiusCompensation setting
 	var radComp = getRadiusCompensation();
@@ -558,10 +552,23 @@ function onSection()
 	   writeBlock(gFormat.format(53 + section.workOffset));  // use the selected WCS
        }
 
-	var tool = section.getTool();
+	 //  var firstSection = getCurrentSectionId();
+	 //  var firstTool = getCurrentToolId();
+	 
+	   	
+	 if(isFirstSection())
+	 	{
+		var fSec = getSection(0);
+		var fTool = fSec.getTool();
 
-	// Insert the Spindle start command
-	if (tool.clockwise)
+		writeBlock(mFormat.format(6) + " " + tFormat.format(fTool.number)); 
+		}
+	 
+
+
+	   var tool = section.getTool();
+	
+	if (tool.clockwise)														// Insert the Spindle start command
 		{
 		writeBlock(mFormat.format(3), sOutput.format(tool.spindleRPM));
 		}
@@ -578,14 +585,14 @@ function onSection()
 		return;
 		}
 
-	// Wait some time for spindle to speed up - only on first section, as spindle is not powered down in-between sections
-	if(isFirstSection())
+	
+	if(isFirstSection()) 													// Wait some time for spindle to speed up - only on first section, as spindle is not powered down in-between sections unless tool is changed - tool change dwell dealt with later
 		{
 		onDwell(getProperty("spindleDwell"));
 		}
 
-	// If the machine has coolant, write M8, else write M9
-	if (getProperty("hasCoolant") == true)
+	
+	if (getProperty("hasCoolant") == true)									// If the machine has coolant, write M8, else write M9
 		{
 		if (tool.coolant == COOLANT_FLOOD)
 			{
@@ -701,6 +708,58 @@ function onSectionEnd()
     yOutput.reset();
     zOutput.reset();
     feedOutput.reset();
+
+	var numberOfSections = getNumberOfSections();
+	var lastSection = getSection(getNumberOfSections() - 1);
+
+	var i = getCurrentSectionId();
+	
+/*	for (var i = 0; i < numberOfSections; ++i)
+	{
+	var section = getSection();
+	var sectionj = getSection(i);
+
+	var currToolId = section.getTool();
+	var nextToolId = sectionj.getTool();
+	
+	}
+
+	if (currToolId.number != nextToolId.number && i < numberOfSections)
+		{
+			writeBlock(mFormat.format(5));
+			onDwell(getProperty("spindleDwell"));		
+			writeBlock(mFormat.format(6) + " " + (tFormat.format(nextToolId.number)));
+					
+
+		}
+
+*/	
+	
+
+		// Add tool change command to end of section with user-specified T-number and dwell time
+		if (getCurrentSectionId() <  getNumberOfSections()-1 )
+			{
+		        
+				var sectioni = getSection(i);
+                var tooli = sectioni.getTool();
+				var j = i + 1; 
+
+			
+				var sectionj = getSection(j);
+				var toolj = sectionj.getTool();
+
+					if (tooli.number != toolj.number)
+						{
+							writeBlock(mFormat.format(5));
+							onDwell(getProperty("spindleDwell"));	
+							writeBlock(mFormat.format(6) + " " + tFormat.format(toolj.number));
+							
+										
+						}
+						
+			}
+				
+	
 
 	writeln("");							// add a blank line at the end of each section
 	}
