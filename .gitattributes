@@ -1,3 +1,1 @@
-*/*.*.cps linguist-language=javascript
-*/*.*.cps linguist-detectable
-*/*.*.cps -linguist-vendored
+*.cps linguist-language=js
