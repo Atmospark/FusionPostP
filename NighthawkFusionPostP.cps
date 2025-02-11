@@ -410,7 +410,7 @@ function onOpen()
 
 	    //add tool info as a comment with tool number linked to section number. Multiple tools in same job will force error in post so this works for Commander as intended GCODE sender to read tool info and display to user
 		
-        writeComment((tFormat.format(tooli.number)) + ": " + toTitleCase(getToolTypeName(tool.type)) + " " + tool.numberOfFlutes + " Flute" + ((tool.numberOfFlutes == 1)?"":"s") + ", Diam = " + tool.diameter + toolUnit + ", Len = " + tool.fluteLength + toolUnit + " ");
+        writeComment("Tool" + tooli.number + ": " + toTitleCase(getToolTypeName(tool.type)) + " " + tool.numberOfFlutes + " Flute" + ((tool.numberOfFlutes == 1)?"":"s") + ", Diam = " + tool.diameter + toolUnit + ", Len = " + tool.fluteLength + toolUnit + " ");
 		
         if (getProperty("routerType") == "router")
 			{
