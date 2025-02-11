@@ -526,7 +526,7 @@ function onSection()
 			if (isMilling())
 				{
           	 	writeComment("Start/End strategy set to clearance height. If you are getting Soft Limit alarms check the operation clearance height");    
-				writeBlock(gFormat.format(54), gMotionModal.format(0), "Z" + xyzFormat.format(section.getParameter('operation:clearanceHeight_value')));	//retract spindle to job clearance height						//(getProperty("jobHomeZ")));	// Retract spindle to Job Z 0
+				writeBlock(gFormat.format(54), gMotionModal.format(0), "Z" + xyzFormat.format(section.getParameter('operation:clearanceHeight_value')));	//retract spindle to job clearance height						
 				}
 			}
 		else if (getProperty("retractStrat") == "G28")	
@@ -552,22 +552,24 @@ function onSection()
        {
 	   writeBlock(gFormat.format(53 + section.workOffset));  // use the selected WCS
        }
-
-	 //  var firstSection = getCurrentSectionId();
-	 //  var firstTool = getCurrentToolId();
 	 
 	   	
 	 if(isFirstSection())
 	 	{
+		
 		var fSec = getSection(0);
 		var fTool = fSec.getTool();
 
 		writeBlock(mFormat.format(6) + " " + tFormat.format(fTool.number)); 
 		}
 	 
+	//	var i = getCurrentSectionId()
+	//	var nSec = getSection(i+1);
+		
 
+	   	var tool = section.getTool();
+	   
 
-	   var tool = section.getTool();
 	
 	if (tool.clockwise)														// Insert the Spindle start command
 		{
@@ -585,9 +587,11 @@ function onSection()
 		error("Fatal Error in Operation " + (sectionId + 1) + ": Counter-clockwise Spindle Operation found, but your spindle does not support this");
 		return;
 		}
+		var nTool = section.getTool()+1;
+		var cRPM = tool.spidleRPM;
+		var nRPM = nTool.spindleRPM;
 
-	
-	if(isFirstSection()) 													// Wait some time for spindle to speed up - only on first section, as spindle is not powered down in-between sections unless tool is changed - tool change dwell dealt with later
+	if((isFirstSection()) || (cRPM != nRPM)) 													// Wait some time for spindle to speed up on first section or if spindle speed changes between sections
 		{
 		onDwell(getProperty("spindleDwell"));
 		}
