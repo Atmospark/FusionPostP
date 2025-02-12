@@ -560,12 +560,9 @@ function onSection()
 		var fSec = getSection(0);
 		var fTool = fSec.getTool();
 
-		writeBlock(mFormat.format(6) + " " + tFormat.format(fTool.number)); 
+		writeBlock (tFormat.format(fTool.number)); 
 		}
 	 
-	//	var i = getCurrentSectionId()
-	//	var nSec = getSection(i+1);
-		
 
 	   	var tool = section.getTool();
 	   
@@ -587,11 +584,36 @@ function onSection()
 		error("Fatal Error in Operation " + (sectionId + 1) + ": Counter-clockwise Spindle Operation found, but your spindle does not support this");
 		return;
 		}
-		var nTool = section.getTool()+1;
-		var cRPM = tool.spidleRPM;
-		var nRPM = nTool.spindleRPM;
 
-	if((isFirstSection()) || (cRPM != nRPM)) 													// Wait some time for spindle to speed up on first section or if spindle speed changes between sections
+		if (getCurrentSectionId() <  getNumberOfSections()-1 )								// Add dwell only if rpm changes between operations
+			{
+		var cRPM = tool.spindleRPM;
+	//			writeComment("current RPM" + " " + cRPM); - testing
+
+		var i = getCurrentSectionId();
+	//			writeComment("current section id" + " " + i); - testing
+		var j = i+1;
+		var nSec = getSection(j);
+	//			writeComment("next section number" + " " + nSec); - testing
+		var nTool = nSec.getTool();
+		var nRPM = nTool.spindleRPM;
+	//			writeComment("next RPM" + " " + nRPM); - testing
+			}
+			
+			
+		
+		var spinStop = false;
+
+		
+
+		if (cRPM != nRPM)
+		{
+			spinStop = true;
+		}
+
+		writeComment("spindle stopped?:" + " " + spinStop);
+
+	if ((isFirstSection()) || (cRPM != nRPM) || (spinStop == true)) 													// Wait some time for spindle to speed up on first section or if spindle speed changes between sections
 		{
 		onDwell(getProperty("spindleDwell"));
 		}
@@ -718,27 +740,8 @@ function onSectionEnd()
 	var lastSection = getSection(getNumberOfSections() - 1);
 
 	var i = getCurrentSectionId();
-	
-/*	for (var i = 0; i < numberOfSections; ++i)
-	{
-	var section = getSection();
-	var sectionj = getSection(i);
 
-	var currToolId = section.getTool();
-	var nextToolId = sectionj.getTool();
-	
-	}
-
-	if (currToolId.number != nextToolId.number && i < numberOfSections)
-		{
-			writeBlock(mFormat.format(5));
-			onDwell(getProperty("spindleDwell"));		
-			writeBlock(mFormat.format(6) + " " + (tFormat.format(nextToolId.number)));
-					
-
-		}
-
-*/	
+//	var spinStop = false;
 	
 
 		// Add tool change command to end of section with user-specified T-number and dwell time
@@ -757,9 +760,10 @@ function onSectionEnd()
 						{
 							writeBlock(mFormat.format(5));
 							onDwell(getProperty("spindleDwell"));	
-							writeBlock(mFormat.format(6) + " " + tFormat.format(toolj.number));
+							writeBlock(tFormat.format(toolj.number));
 							
-										
+							spinStop = true;
+						
 						}
 						
 			}
