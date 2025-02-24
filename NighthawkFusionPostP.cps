@@ -11,6 +11,8 @@
 25-09-2024      -   Added unit values into tool information for T# comment lines to avoid confusion
 06-02-2025	-   Reformatted tool information for easier integration for Commander
 11-02-2025	-   Reformatted tool information and added info breakout at start of GCODE for easier integration into latest Commander build
+24-02-2025	- 	Added ability to block tool info output into GCODE
+				- 	Added ability to output debug comments regarding tool info
     
 				
 
@@ -75,6 +77,25 @@ properties =
 		value      : false,
 		scope      : "post"
 	  },
+
+	 toolOutput: {
+		title      : "Output Tool Change Data",
+		description: "If ticked: Outputs T# commands into GCODE. If your job contains multiple tools this must be ticked",
+		group      : "preferences",
+		type       : "boolean",
+		value      : true,
+		scope      : "post"
+	  },
+
+	  debugComment: {
+		title      : "Output Debug Comments",
+		description: "If ticked: Outputs debug comments into GCODE to help locate problems in post processing",
+		group      : "preferences",
+		type       : "boolean",
+		value      : false,
+		scope      : "post"
+	  },
+
 
     routerType: {
 		title      : "Spindle Type",
@@ -321,6 +342,14 @@ function onOpen()
 	writeComment("G-Code optimized for " + myMachine.getModel() + " controller using " + myMachine.getControl() );
 	writeComment("Post Processor version " + obversion);
 
+	if (getProperty("debugComment") == true)
+		{
+			writeln("");
+			writeln("");
+			writeComment("WARNING: Output Debug Comments selected - extra data will be inserted into GCODE which may interfere with Commander's tool change recognition!");
+			writeln("");
+		}
+
 	writeln("");
 
 	if(unit == MM)
@@ -357,6 +386,8 @@ function onOpen()
 	writeComment(numberOfSections + " Operation" + ((numberOfSections == 1)?"":"s"));
 	writeln("");
 
+	var multipleToolError = false;
+	
 	for (var i = 0; i < numberOfSections; ++i)
 		{
 		         
@@ -382,10 +413,14 @@ function onOpen()
                          return;
                          }
                       }
-					
+					else if (tooli.number != toolj.number && (getProperty("toolOutput") == false))
+						{
+						multipleToolError = true;
+						}
+
                    }
 
-    
+
         var section = getSection(i);
 		var tool = section.getTool();
 		var rpm = section.getMaximumSpindleSpeed();
@@ -401,7 +436,7 @@ function onOpen()
             }
 
 
-      if (section.workOffset > 0)
+    	if (section.workOffset > 0)
          {
 		   writeComment("Work Coordinate System : G" + (section.workOffset + 53));
          }
@@ -410,8 +445,11 @@ function onOpen()
 
 	    //add tool info as a comment with tool number linked to section number. Multiple tools in same job will force error in post so this works for Commander as intended GCODE sender to read tool info and display to user
 		
-        writeComment("Tool" + " " + tooli.number + ": " + toTitleCase(getToolTypeName(tool.type)) + " " + tool.numberOfFlutes + " Flute" + ((tool.numberOfFlutes == 1)?"":"s") + ", Diam = " + tool.diameter + toolUnit + ", Len = " + tool.fluteLength + toolUnit + " ");
-		
+   		if (getProperty("toolOutput") == true)
+		 	{
+			writeComment("Tool" + " " + tooli.number + ": " + toTitleCase(getToolTypeName(tool.type)) + " " + tool.numberOfFlutes + " Flute" + ((tool.numberOfFlutes == 1)?"":"s") + ", Diam = " + tool.diameter + toolUnit + ", Len = " + tool.fluteLength + toolUnit + " ");
+		 	}
+
         if (getProperty("routerType") == "router")
 			{
 			writeComment("Router : RPM = " + rpm + ", set router dial to " + rpm2dial(rpm));
@@ -439,6 +477,15 @@ function onOpen()
 		writeComment(machineTimeText);
 		writeln("");
 		}
+	
+	if (multipleToolError == true)
+			{
+				var mte = "***ERROR*** Multiple tools detected but Output Tool Data not ticked. You must enable Tool Output Data in the Post Processor window if multiple tools are to be used";
+				warning(mte);
+				writeComment(mte);
+				error("Multiple tools detected but Output Tool Data not ticked. You must enable Tool Output Data in the Post Processor window if multiple tools are to be used");
+			}
+
 	writeln("");
     
 	writeBlock(gAbsIncModal.format(90));
@@ -554,7 +601,7 @@ function onSection()
        }
 	 
 	   	
-	 if(isFirstSection())
+	 if(isFirstSection() && (getProperty("toolOutput") == true))
 	 	{
 		
 		var fSec = getSection(0);
@@ -585,35 +632,52 @@ function onSection()
 		return;
 		}
 
-		if (getCurrentSectionId() <  getNumberOfSections()-1 )								// Add dwell only if rpm changes between operations
-			{
-		var cRPM = tool.spindleRPM;
-	//			writeComment("current RPM" + " " + cRPM); - testing
-
-		var i = getCurrentSectionId();
-	//			writeComment("current section id" + " " + i); - testing
-		var j = i+1;
-		var nSec = getSection(j);
-	//			writeComment("next section number" + " " + nSec); - testing
-		var nTool = nSec.getTool();
-		var nRPM = nTool.spindleRPM;
-	//			writeComment("next RPM" + " " + nRPM); - testing
-			}
-			
-			
-		
 		var spinStop = false;
 
-		
+		if (isFirstSection())
+			{
+				spinStop = true;
+			}
 
-		if (cRPM != nRPM)
-		{
-			spinStop = true;
-		}
+		if (getCurrentSectionId() > 0 )								// Add dwell only if rpm changes between operations
+			{
+				var cRPM = tool.spindleRPM;
+				var cTool = section.getTool();
 
-		writeComment("spindle stopped?:" + " " + spinStop);
 
-	if ((isFirstSection()) || (cRPM != nRPM) || (spinStop == true)) 													// Wait some time for spindle to speed up on first section or if spindle speed changes between sections
+				var i = getCurrentSectionId();
+
+
+				var j = i-1;
+				var pSec = getSection(j);
+
+
+				var pTool = pSec.getTool();
+				var pRPM = pTool.spindleRPM;
+
+
+					if (cRPM != pRPM || pTool.number != cTool.number) 
+						{
+							spinStop = true;
+						}
+
+				if (getProperty("debugComment") == true)	
+					{
+						writeln("");
+						writeComment("prev. section number: " + " " + getSection(j)); 		// - debug
+						writeComment("curr. section number" + " " + i); 					// - debug
+						writeComment("previous RPM: "+ " " + pRPM);							// - debug
+						writeComment("current RPM: " + " " + cRPM);							// - debug
+						writeComment("Prev. Tool: " + " " + tFormat.format(pTool.number)); 	// - debug
+						writeComment("Curr. Tool: " + " " + tFormat.format(cTool.number)); 	// - debug
+						writeComment("Tool / RPM Changed?:" + " " + spinStop);				// - debug
+						writeln("");
+					}	
+
+			}
+
+
+	if ((isFirstSection()) || (spinStop == true)) 													// Wait some time for spindle to speed up on first section or if spindle speed changes between sections
 		{
 		onDwell(getProperty("spindleDwell"));
 		}
@@ -736,16 +800,10 @@ function onSectionEnd()
     zOutput.reset();
     feedOutput.reset();
 
-	var numberOfSections = getNumberOfSections();
-	var lastSection = getSection(getNumberOfSections() - 1);
-
 	var i = getCurrentSectionId();
 
-//	var spinStop = false;
-	
-
 		// Add tool change command to end of section with user-specified T-number and dwell time
-		if (getCurrentSectionId() <  getNumberOfSections()-1 )
+		if (getCurrentSectionId() <  getNumberOfSections()-1  && (getProperty("toolOutput") == true))
 			{
 		        
 				var sectioni = getSection(i);
@@ -756,7 +814,7 @@ function onSectionEnd()
 				var sectionj = getSection(j);
 				var toolj = sectionj.getTool();
 
-					if (tooli.number != toolj.number)
+					if ((tooli.number != toolj.number) || (tooli.spindleRPM != toolj.spindleRPM))
 						{
 							writeBlock(mFormat.format(5));
 							onDwell(getProperty("spindleDwell"));	
@@ -777,18 +835,19 @@ function onClose()
 	{
 	if (getProperty("finishAtJobStart") == true)		// job finishes at where it started
 		{
-		writeBlock(gAbsIncModal.format(90));	// Set to absolute coordinates for the following moves
+			writeBlock(gAbsIncModal.format(90));	// Set to absolute coordinates for the following moves
+
 		if (getProperty("retractStrat") == "clearanceHeight")
 		{
 			var lastSection = getSection(getNumberOfSections() - 1)
 
 				if (isMilling())						// For CNC we move the Z-axis up, for lasercutter it's not needed
 				{
-				writeBlock(gAbsIncModal.format(90), gFormat.format(54), gMotionModal.format(0), "Z" + xyzFormat.format(lastSection.getParameter('operation:clearanceHeight_value')));	// Retract spindle to clearance height
+					writeBlock(gAbsIncModal.format(90), gFormat.format(54), gMotionModal.format(0), "Z" + xyzFormat.format(lastSection.getParameter('operation:clearanceHeight_value')));	// Retract spindle to clearance height
 				}
 			}		
 
-	else if (getProperty("retractStrat") == "G28")	
+	 if (getProperty("retractStrat") == "G28")	
 		{
 			if (isMilling())						// For CNC we move the Z-axis up, for lasercutter it's not needed
 				{
@@ -796,17 +855,21 @@ function onClose()
 				}
 			
 		}	
+		
 		writeBlock(mFormat.format(5));																					// Stop Spindle
+
 		if (getProperty("hasCoolant") == true)
 			{
-			writeBlock(mFormat.format(9));																				// Stop Coolant
+				writeBlock(mFormat.format(9));																				// Stop Coolant
 			}
+
 		onDwell(getProperty("spindleDwell"));																			// Wait for spindle to stop
+
 		writeBlock(gAbsIncModal.format(90), gFormat.format(54), gMotionModal.format(0), "X" + xyzFormat.format(getProperty("jobHomeX")), "Y" + xyzFormat.format(getProperty("jobHomeY")));	// Return to home position EDITED TO G54
 																									
   
 		}
-	else if (getProperty("finishAtJobStart") == false) // job finishes at absolute position
+	if (getProperty("finishAtJobStart") == false) // job finishes at absolute position
 		{
 		writeBlock(gAbsIncModal.format(90));	// Set to absolute coordinates for the following moves
 		if (isMilling())						// For CNC we move the Z-axis up, for lasercutter it's not needed
