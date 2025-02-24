@@ -9,10 +9,11 @@
 09-08-2024      -   Added multiple tool error checking
                         Reformatted tool information for easier access for Commander
 25-09-2024      -   Added unit values into tool information for T# comment lines to avoid confusion
-06-02-2025	-   Reformatted tool information for easier integration for Commander
-11-02-2025	-   Reformatted tool information and added info breakout at start of GCODE for easier integration into latest Commander build
-24-02-2025	- 	Added ability to block tool info output into GCODE
-				- 	Added ability to output debug comments regarding tool info
+06-02-2025		-   Updated to ver 1.05
+						Reformatted tool information for easier integration for Commander
+11-02-2025		-   Reformatted tool information and added info breakout at start of GCODE for easier integration into latest Commander build
+24-02-2025		- 	Added ability to block tool info output into GCODE
+					 	Added ability to output debug comments regarding tool info
     
 				
 
