@@ -286,10 +286,21 @@ function writeBlock()
 	writeWords(arguments);
 	}
 
+function formatTool(text)
+	{
+	 return(";" + "(" + filterText(String(text), permittedCommentChars) + ")");
+	}
+ 
+function writeTool(text)
+	{
+	 writeln(formatTool(text));
+	}
+
 function formatComment(text)
    {
    return ("(" + filterText(String(text), permittedCommentChars) + ")");
    }
+  
 
 function writeComment(text)
    {
