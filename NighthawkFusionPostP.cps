@@ -14,17 +14,18 @@
 11-02-2025		-   Reformatted tool information and added info breakout at start of GCODE for easier integration into latest Commander build
 24-02-2025		- 	Added ability to block tool info output into GCODE
 					 	Added ability to output debug comments regarding tool info
+11-04-2025		-	Reformatted tool information comment lines to overcome temporary Commander bug
     
 				
 
 
 */
 
-description = "CNC3D - Nighthawk - GRBL";
+description = "CNC3D - Nighthawk - GRBL-ESP32";
 vendor = "CNC3D PTY LTD";
 vendorUrl = "http://www.cnc3d.com.au";
 model = "QueenBee, QB2, YouCarve, Metal Storm, SharpCNC, Ultimate Bee";
-obversion = ' 1.05';    								// date updated 25-09-2024
+obversion = ' 1.06';    								// date updated 11-04-2025
 longDescription = description + " : Post" + obversion; 	// adds description to post library dialog box
 legal = "CNC3D PTY LTD Australia";
 certificationLevel = 2;
@@ -35,9 +36,9 @@ setCodePage("ascii");									// character set of the gcode file
 //setEOL(CRLF);											// end-of-line type : default for Windows OS is CRLF (so that's why this line is commented out), change to CR, LF, CRLF or LFCR if you are on another OS...
 
 var permittedCommentChars = " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,=_-*/\\:";
-capabilities = CAPABILITY_MILLING | CAPABILITY_JET;		// intended for a CNC, so Milling, or 2D machines, such as lasers..
+capabilities = CAPABILITY_MILLING | CAPABILITY_JET;		// intended for a CNC, so Milling, or 2D machines such as lasers.
 tolerance = spatial(0.002, MM);							// when linearizing a move, fusion will create linear segments which are within this amount of the actual path... Smaller values will result in more and smaller linear segments. GRBL.cps uses 0.002 mm
-minimumChordLength = spatial(0.25, MM);					// minimum lenght of an arc, if Fusion needs a short arc, it will linearize... Problem with very small arcs is that rounding errors resulting from limited number of digits, result in GRBL error 33
+minimumChordLength = spatial(0.25, MM);					// minimum length of an arc, if Fusion needs a short arc, it will linearize... Problem with very small arcs is that rounding errors resulting from limited number of digits, result in GRBL error 33
 minimumCircularRadius = spatial(0.5, MM);				// minimum radius of an arc.. Fusion will linearize if you need a smaller arc. Same problem with rounding errors as above
 maximumCircularRadius = spatial(1000, MM);
 minimumCircularSweep = toRad(0.1);
@@ -380,7 +381,7 @@ function onOpen()
                 var sectioni = getSection(i);
                 var tooli = sectioni.getTool();
 				
-				writeComment((tFormat.format(tooli.number)) + ": " + toTitleCase(getToolTypeName(tooli.type)) + " " + tooli.numberOfFlutes + " Flute" + ((tooli.numberOfFlutes == 1)?"":"s") + ", Diam = " + tooli.diameter + toolUnit + ", Len = " + tooli.fluteLength + toolUnit + " ");
+				writeTool((tFormat.format(tooli.number)) + ": " + toTitleCase(getToolTypeName(tooli.type)) + " " + tooli.numberOfFlutes + " Flute" + ((tooli.numberOfFlutes == 1)?"":"s") + ", Diam = " + tooli.diameter + toolUnit + ", Len = " + tooli.fluteLength + toolUnit + " ");
 		
 		}
 	writeln("");
