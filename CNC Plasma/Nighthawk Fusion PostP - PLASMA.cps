@@ -35,7 +35,7 @@ minimumCircularRadius = spatial(0.125, MM);
 maximumCircularRadius = spatial(1000, MM);
 minimumCircularSweep = toRad(0.1);                                                                                        // was 0.01
 maximumCircularSweep = toRad(350);
-allowHelicalMoves = true;
+allowHelicalMoves = false;                                                                                                // laser / plasma never doing this
 allowedCircularPlanes = (1 << PLANE_XY);// | (1 << PLANE_ZX) | (1 << PLANE_YZ); // only XY, ZX, and YZ planes
 
 // the above circular plane limitation appears to be a solution to the faulty arcs problem (but is not entirely)
@@ -470,10 +470,7 @@ function writeHeader(secID)
             }
          }
       }
-   if (isLaser || isPlasma)
-      {
-      allowHelicalMoves = false; // laser/plasma not doing this, ever
-      }
+ 
    writeln("");
 
    gAbsIncModal.reset();
