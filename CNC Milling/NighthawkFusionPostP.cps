@@ -21,7 +21,7 @@
 
 */
 
-description = "CNC3D - Nighthawk - GRBL-ESP32";
+description = "CNC3D - Nighthawk";
 vendor = "CNC3D PTY LTD";
 vendorUrl = "http://www.cnc3d.com.au";
 model = "QueenBee, QB2, YouCarve, Metal Storm, SharpCNC, Ultimate Bee";
