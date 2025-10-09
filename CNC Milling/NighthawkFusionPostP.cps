@@ -15,6 +15,8 @@
 24-02-2025		- 	Added ability to block tool info output into GCODE
 					 	Added ability to output debug comments regarding tool info
 11-04-2025		-	Reformatted tool information comment lines to overcome temporary Commander bug
+09-10-2025		-	Changed how tool data is interpreted between operations for smoother tool changes
+				-	Added RPM into tool info for display in GCODE
     
 				
 
@@ -25,7 +27,7 @@ description = "CNC3D - Nighthawk";
 vendor = "CNC3D PTY LTD";
 vendorUrl = "http://www.cnc3d.com.au";
 model = "QueenBee, QB2, YouCarve, Metal Storm, SharpCNC, Ultimate Bee";
-obversion = ' 1.06';    								// date updated 11-04-2025
+obversion = ' 1.07';    								// date updated 09-10-2025
 longDescription = description + " : Post" + obversion; 	// adds description to post library dialog box
 legal = "CNC3D PTY LTD Australia";
 certificationLevel = 2;
