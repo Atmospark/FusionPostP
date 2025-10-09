@@ -381,7 +381,7 @@ function onOpen()
                 var sectioni = getSection(i);
                 var tooli = sectioni.getTool();
 				
-				writeTool((tFormat.format(tooli.number)) + ": " + toTitleCase(getToolTypeName(tooli.type)) + " " + tooli.numberOfFlutes + " Flute" + ((tooli.numberOfFlutes == 1)?"":"s") + ", Diam = " + tooli.diameter + toolUnit + ", Len = " + tooli.fluteLength + toolUnit + " ");
+				writeTool((tFormat.format(tooli.number)) + ": " + toTitleCase(getToolTypeName(tooli.type)) + " " + tooli.numberOfFlutes + " Flute" + ((tooli.numberOfFlutes == 1)?"":"s") + ", Diam = " + tooli.diameter + toolUnit + ", Len = " + tooli.fluteLength + toolUnit + ", RPM = " + tooli.spindleRPM + " ");
 		
 		}
 	writeln("");
@@ -460,7 +460,7 @@ function onOpen()
 		
    		if (getProperty("toolOutput") == true)
 		 	{
-			writeComment("Tool" + " " + tooli.number + ": " + toTitleCase(getToolTypeName(tool.type)) + " " + tool.numberOfFlutes + " Flute" + ((tool.numberOfFlutes == 1)?"":"s") + ", Diam = " + tool.diameter + toolUnit + ", Len = " + tool.fluteLength + toolUnit + " ");
+			writeComment("Tool" + " " + tooli.number + ": " + toTitleCase(getToolTypeName(tool.type)) + " " + tool.numberOfFlutes + " Flute" + ((tool.numberOfFlutes == 1)?"":"s") + ", Diam = " + tool.diameter + toolUnit + ", Len = " + tool.fluteLength + toolUnit + ", RPM = " + tool.spindleRPM + " ");
 		 	}
 
         if (getProperty("routerType") == "router")
@@ -652,20 +652,18 @@ function onSection()
 				spinStop = true;
 			}
 
-		if (getCurrentSectionId() > 0 )								// Add dwell only if rpm changes between operations
+		if (sectionId > 0 )								// Add dwell only if rpm/tool changes between operations
 			{
 				var cRPM = tool.spindleRPM;
 				var cTool = section.getTool();
 
 
-				var i = getCurrentSectionId();
+				var pSec = sectionId -1;
+				var pSection = getSection(pSec);
+				
 
 
-				var j = i-1;
-				var pSec = getSection(j);
-
-
-				var pTool = pSec.getTool();
+				var pTool = pSection.getTool();
 				var pRPM = pTool.spindleRPM;
 
 
@@ -677,8 +675,8 @@ function onSection()
 				if (getProperty("debugComment") == true)	
 					{
 						writeln("");
-						writeComment("prev. section number: " + " " + getSection(j)); 		// - debug
-						writeComment("curr. section number" + " " + i); 					// - debug
+						writeComment("prev. section number: " + " " + (pSec+1)); 				// - debug
+						writeComment("curr. section number: " + " " + (sectionId+1)); 			// - debug
 						writeComment("previous RPM: "+ " " + pRPM);							// - debug
 						writeComment("current RPM: " + " " + cRPM);							// - debug
 						writeComment("Prev. Tool: " + " " + tFormat.format(pTool.number)); 	// - debug
